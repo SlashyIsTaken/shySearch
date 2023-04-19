@@ -1,8 +1,10 @@
 fx_version 'cerulean'
 game 'gta5'
 
-author 'Slashy'
-description 'Request Search Script'
+author 'shy // Slashy'
+description 'Criminal Actions'
+
+shared_script 'config.lua'
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',

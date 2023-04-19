@@ -1,78 +1,91 @@
-ESX = nil
+ESX = exports['es_extended']:getSharedObject()
 
-Citizen.CreateThread(function()
-	while ESX == nil do
-		TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-		Citizen.Wait(0)
-	end
-end)
-
-RegisterCommand('fouilleer', function()
-    if IsPedArmed(PlayerPedId(), 4) or IsPedArmed(PlayerPedId(), 1) then
+RegisterCommand(Config.CommandName, function()
+    if Config.OnlyAllowArmed then
+        if IsPedArmed(PlayerPedId(), 4) or IsPedArmed(PlayerPedId(), 1) then
+            local closestPlayer, closestPlayerDistance = ESX.Game.GetClosestPlayer()
+            if closestPlayer ~= -1 and closestPlayerDistance < 3.0 then
+                local target = GetPlayerServerId(closestPlayer)
+                if Config.UseStress then
+                    TriggerEvent(Config.StressTrigger, Config.StressAmount)
+                end
+                TriggerServerEvent('shyCA:request', target)
+                exports['okokNotify']:Alert(Config.Translations.notifytitle, Config.Translations.waitforpass, 5000, 'info')
+            else
+                exports['okokNotify']:Alert(Config.Translations.notifytitle, Config.Translations.nobodynear, 5000, 'error')
+            end
+        else
+            exports['okokNotify']:Alert(Config.Translations.notifytitle, Config.Translations.nothreat, 5000, 'error')
+        end
+    else
         local closestPlayer, closestPlayerDistance = ESX.Game.GetClosestPlayer()
         if closestPlayer ~= -1 and closestPlayerDistance < 3.0 then
             local target = GetPlayerServerId(closestPlayer)
-            TriggerEvent("client:newStress", 500)
-            TriggerServerEvent('karners:request', target)
-            exports['okokNotify']:Alert("Fouilleren", "Wacht nu totdat "..target.." het fouilleer verzoek goedkeurt.", 5000, 'info')
+            if Config.UseStress then
+                TriggerEvent(Config.StressTrigger, Config.StressAmount)
+            end
+            TriggerServerEvent('shyCA:request', target)
+            exports['okokNotify']:Alert(Config.Translations.notifytitle, Config.Translations.waitforpass, 5000, 'info')
         else
-            exports['okokNotify']:Alert("Fouilleren", "Helaas. Niemand in de buurt om te fouilleren", 5000, 'error')
+            exports['okokNotify']:Alert(Config.Translations.notifytitle, Config.Translations.nobodynear, 5000, 'error')
         end
-    else
-        exports['okokNotify']:Alert("Fouilleren", "Helaas. Je vormt geen bedreiging", 5000, 'error')
     end
 end)
 
-RegisterNetEvent('karners:displayrequest')
-AddEventHandler('karners:displayrequest', function(boef, so)
-    exports['okokNotify']:Alert("Fouilleer Verzoek", "<br><b>ID: "..boef.."</b> wilt je fouilleren.<br><br>Druk op <b>Z</b> om te accepteren<br><i>of</i><br>Druk op <b>G</b> om te weigeren", 10000, 'info')
-    waitingforpress(boef, so)
+RegisterNetEvent('shyCA:displayrequest')
+AddEventHandler('shyCA:displayrequest', function(player, so)
+    exports['okokNotify']:Alert(Config.Translations.searchtitle, "<br><b>ID: "..player.."</b> "..Config.Translations.wantstosearch.."<br><br>"..Config.Translations.press, 10000, 'info')
+    waitingforpress(player, so)
 end)
 
-RegisterNetEvent('karners:openmenu')
-AddEventHandler('karners:openmenu', function(so)
+RegisterNetEvent('shyCA:openmenu')
+AddEventHandler('shyCA:openmenu', function(so)
     if so ~= nil then
-        OpenBodySearchMenu(so)
+        if Confix.ox then
+            exports.ox_inventory:openInventory('player', so)
+        else
+            OpenBodySearchMenu(so)
+        end
     end
 end)
 
-function waitingforpress(boef, so)
+function waitingforpress(player, so)
     local timer = 1500
     while timer >= 1 do
         Citizen.Wait(1)
         if IsControlJustPressed(1, 48) then
-            geaccepteerd(boef, so)
+            accepted(player, so)
             break
         end
         if IsControlJustPressed(1, 47) then
-            geweigerd(boef)
+            declined(player)
             break
         end
         timer = timer - 1
         if timer == 1 then
-            geweigerd(boef)
+            declined(player)
             break
         end
     end
 end
 
-function geaccepteerd(boef, so)
-    TriggerServerEvent('karners:displaybuit', boef, so)
-    exports['okokNotify']:Alert("Fouilleren", "Je wordt nu gefouilleerd...", 5000, 'info')
+function accepted(player, so)
+    TriggerServerEvent('shyCA:display', player, so)
+    exports['okokNotify']:Alert(Config.Translations.notifytitle, Config.Translations.beingsearched, 5000, 'info')
 end
 
-function geweigerd(boef)
-    TriggerServerEvent('karners:deniedbitch', boef)
-    exports['okokNotify']:Alert("Fouilleren", "Je wees het fouilleer verzoek af.", 5000, 'info')
+function declined(player)
+    TriggerServerEvent('shyCA:denied', player)
+    exports['okokNotify']:Alert(Config.Translations.notifytitle, Config.Translations.declined, 5000, 'info')
 end
 
 function OpenBodySearchMenu(player)
-    ESX.TriggerServerCallback('karners:getOtherPlayerData', function(data)
+    ESX.TriggerServerCallback('shyCA:getOtherPlayerData', function(data)
 
         local elements = {}
 
         table.insert(elements, {
-            label = '<b>GELD</b>',
+            label = '<b>MONEY</b>',
             value = nil
         })
 
@@ -81,7 +94,7 @@ function OpenBodySearchMenu(player)
             if data.accounts[i].name == 'black_money' and data.accounts[i].money > 0 then
 
                 table.insert(elements, {
-                    label = 'Zwart Geld: €'..ESX.Math.Round(data.accounts[i].money),
+                    label = 'Black Money: €'..ESX.Math.Round(data.accounts[i].money),
                     value = 'black_money',
                     itemType = 'item_account',
                     amount = data.accounts[i].money
@@ -90,7 +103,7 @@ function OpenBodySearchMenu(player)
             end
             if data.accounts[i].name == 'money' and data.accounts[i].money > 0 then
                 table.insert(elements, {
-                    label = 'Cash Geld: €'..ESX.Math.Round(data.accounts[i].money),
+                    label = 'Cash: €'..ESX.Math.Round(data.accounts[i].money),
                     value = 'money',
                     itemType = 'item_account',
                     amount = data.accounts[i].money
@@ -99,13 +112,13 @@ function OpenBodySearchMenu(player)
         end
 
         table.insert(elements, {
-            label = '<b>WAPENS</b>',
+            label = '<b>WEAPONS</b>',
             value = nil
         })
 
         for i = 1, #data.weapons, 1 do
             table.insert(elements, {
-                label = ESX.GetWeaponLabel(data.weapons[i].name).." met "..data.weapons[i].ammo.." kogels",
+                label = ESX.GetWeaponLabel(data.weapons[i].name).." with "..data.weapons[i].ammo.." bullets",
                 value = data.weapons[i].name,
                 itemType = 'item_weapon',
                 amount = data.weapons[i].ammo
@@ -129,8 +142,8 @@ function OpenBodySearchMenu(player)
         end
 
         ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'body_search', {
-            title = 'Fouilleer Menu',
-            align = 'top-right',
+            title = 'shy CA',
+            align = Config.Align,
             elements = elements
         }, function(data, menu)
 
@@ -139,7 +152,6 @@ function OpenBodySearchMenu(player)
             local amount = data.current.amount
 
             if data.current.value ~= nil then
-                exports['okokNotify']:Alert("Fouilleren", "Nee nee, je mag niks afpakken...<br><br>Gewoon lief vragen aan de persoon in kwestie of hij het vrijwillig afgeeft.", 5000, 'info')
                 OpenBodySearchMenu(player)
             end
 
@@ -150,4 +162,4 @@ function OpenBodySearchMenu(player)
     end, player)
 end
 
-TriggerEvent('chat:addSuggestion', '/fouilleer', 'Fouilleer de dichtsbijzijnde speler')
+TriggerEvent('chat:addSuggestion', Config.CommandName, Config.CommandDesc)

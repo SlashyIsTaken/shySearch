@@ -4,28 +4,29 @@ TriggerEvent('esx:getSharedObject', function(obj)
     ESX = obj 
 end)
 
-RegisterServerEvent('karners:request')
-AddEventHandler('karners:request', function(targetid)
+--Searching
+RegisterServerEvent('shyCA:request')
+AddEventHandler('shyCA:request', function(targetid)
     if targetid ~= nil then
-        TriggerClientEvent('karners:displayrequest', targetid, source, targetid)
+        TriggerClientEvent('shyCA:displayrequest', targetid, source, targetid)
     end
 end)
 
-RegisterServerEvent('karners:deniedbitch')
-AddEventHandler('karners:deniedbitch', function(boefid)
-    if boefid ~= nil then
-        TriggerClientEvent('okokNotify:Alert', boefid, "Fouilleren", "Je fouilleer verzoek is afgewezen.", 5000, 'error')
+RegisterServerEvent('shyCA:denied')
+AddEventHandler('shyCA:denied', function(invoker)
+    if invoker ~= nil then
+        TriggerClientEvent('okokNotify:Alert', invoker, Config.Translations.notifytitle, Config.Translations.denied, 5000, 'error')
     end
 end)
 
-RegisterServerEvent('karners:displaybuit')
-AddEventHandler('karners:displaybuit', function(boefid, slachtoffer)
-    if boefid ~= nil then
-        TriggerClientEvent('karners:openmenu', boefid, slachtoffer)
+RegisterServerEvent('shyCA:display')
+AddEventHandler('shyCA:display', function(invoker, target)
+    if invoker ~= nil then
+        TriggerClientEvent('shyCA:openmenu', invoker, target)
     end
 end)
 
-ESX.RegisterServerCallback('karners:getOtherPlayerData', function(source, cb, target)
+ESX.RegisterServerCallback('shyCA:getOtherPlayerData', function(source, cb, target)
 	local xPlayer = ESX.GetPlayerFromId(target)
 	local result = MySQL.Sync.fetchAll('SELECT firstname, lastname, sex, dateofbirth, height, job FROM users WHERE identifier = @identifier', {
 		['@identifier'] = xPlayer.identifier
@@ -51,3 +52,5 @@ ESX.RegisterServerCallback('karners:getOtherPlayerData', function(source, cb, ta
 	}
 	cb(data)
 end)
+
+-- Cuffing
