@@ -9,7 +9,7 @@ Config.UseStress = true -- Enable/disable use of adding stress to player if the 
 Config.StressTrigger = "client:newStress"
 Config.StressAmount = 500
 
-Confix.ox = true -- Toggle use of ox_inventory. False will make use of esx_menu_default.
+Config.ox = true -- Toggle use of ox_inventory. False will make use of esx_menu_default.
 Config.Align = 'top-right' -- Where to align the menu.
 
 Config.Translations = {
