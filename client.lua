@@ -41,7 +41,7 @@ end)
 RegisterNetEvent('shyCA:openmenu')
 AddEventHandler('shyCA:openmenu', function(so)
     if so ~= nil then
-        if Confix.ox then
+        if Config.ox then
             exports.ox_inventory:openInventory('player', so)
         else
             OpenBodySearchMenu(so)
